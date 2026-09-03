@@ -1,4 +1,4 @@
-cmake_minimum_required(3.20)
+cmake_minimum_required(VERSION 3.20)
 project(aes_library VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)

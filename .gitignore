@@ -1,0 +1,185 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+bin/
+lib/
+install/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CMakeUserPresets.json
+*.cmake
+!CMakeLists.txt
+!cmake/CMakeLists.txt
+!cmake/*.cmake
+!cmake/modules/*.cmake
+
+# Compiled object files
+*.o
+*.obj
+*.so
+*.so.*
+*.a
+*.la
+*.lo
+*.dylib
+*.dll
+*.dylib
+*.exe
+*.out
+*.app
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Executables
+*.exe
+*.out
+*.app
+*.elf
+*.bin
+
+# Debug symbols
+*.dSYM/
+*.tbd
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.nvim/
+.clangd/
+.cache/
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# CLion
+.idea/
+cmake-build-*/
+
+# Qt Creator
+*.user
+*.creator
+*.files
+*.includes
+*.config
+
+# KDevelop
+.kdev4/
+*.kdev4
+
+# Codelite
+*.project
+*.workspace
+
+# Compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+*.tmp
+
+# Test artifacts
+Testing/
+test-results/
+coverage/
+*.gcda
+*.gcno
+*.gcov
+*.cov
+
+# Package management
+*.deb
+*.rpm
+*.tar.gz
+*.tar.bz2
+*.zip
+*.7z
+
+# Misc
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.orig
+*.rej
+*.patch
+
+# Doxygen
+html/
+latex/
+doc/html/
+doc/latex/
+
+# Compiler generated
+.deps/
+.deps/
+*.d
+
+# Conan
+conaninfo.txt
+conanbuildinfo.cmake
+conan.lock
+conanbuild.*
+conaninfo.*
+conanenv.*
+
+# Vcpkg
+vcpkg_installed/
+vcpkg-manifest-install.log
+
+# CPM.cmake
+_cpm/
+
+# Profiling
+*.prof
+gmon.out
+
+# Core dumps
+core.*
+*.core
+core
+
+# LSP
+compile_commands.json
+*.cache
+
+# Formatting
+.clang-format
+.clang-tidy
+.clangd
+
+# Strace output
+*.strace
+
+# Valgrind
+vgcore.*
+
+# Sanitizers
+*.asan.log
+*.tsan.log
+*.msan.log
+*.ubsan.log
+
+# Your specific project files (keep these)
+# !include/
+# !src/
+# !tests/
+# !CMakeLists.txt
