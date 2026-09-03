@@ -40,7 +40,7 @@ target_include_directories(aes_lib
 # This prevents AES_NI instructions from leaking into common code.
 if(AES_ARCH_X86 AND NOT MSVC)
     set_source_files_properties(crypto/aes_ni.cpp
-        PROPERTIES COMPILE_FLAGS "-meas -msse4.1")
+        PROPERTIES COMPILE_FLAGS "-maes -msse4.1")
 endif()
 if(AES_ARCH_ARM64 AND NOT MSVC)
     set_source_files_properties(crypto/aes_arm.cpp
