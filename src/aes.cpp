@@ -7,18 +7,8 @@
 
 namespace aes {
 
-// Pull in the backend accessor from dispatch.cpp
-namespace detail {
-    struct Backend {
-        backend::ExpandKeyFn ek;
-        backend::CtrXorFn    cx;
-    };
-    Backend get_backend() noexcept;
-}
-
 namespace {
-    // 32-bit counter wraps at 2^32 blocks. Stop before that.
-    constexpr uint64_t MAX_BYTES = (uint64_t{1} << 32) * 16 - 16;
+constexpr uint64_t MAX_BYTES = (uint64_t{1} << 32) * 16 - 16;
 }
 
 EncryptResult encrypt(const Key& key, const std::vector<std::byte>& pt) {
@@ -27,7 +17,6 @@ EncryptResult encrypt(const Key& key, const std::vector<std::byte>& pt) {
 
     EncryptResult r;
 
-    // 96-bit random nonce + 32-bit zero counter
     std::byte rnd[12];
     platform::csprng_fill(rnd, 12);
     std::memcpy(r.nonce.data(), rnd, 12);

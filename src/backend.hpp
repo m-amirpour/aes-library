@@ -21,3 +21,16 @@ extern const CtrXorFn    arm_ctr_xor;
 #endif
 
 } // namespace aes::backend
+
+// Shared struct used by dispatch.cpp, aes.cpp, and key.cpp.
+// Defined here so all three files see the exact same type.
+namespace aes::detail {
+
+struct Backend {
+    backend::ExpandKeyFn ek;
+    backend::CtrXorFn    cx;
+};
+
+Backend get_backend() noexcept;
+
+} // namespace aes::detail
