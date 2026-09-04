@@ -13,11 +13,10 @@ void unlock_memory(void* ptr, std::size_t len) noexcept;
 // Used for key material and expanded round keys.
 template <typename T>
 class SecureAllocator {
-   public:
+public:
     using value_type = T;
     SecureAllocator() noexcept = default;
-    template <typename U>
-    SecureAllocator(const SecureAllocator<U>&) noexcept {}
+    template <typename U> SecureAllocator(const SecureAllocator<U>&) noexcept {}
 
     T* allocate(std::size_t n) {
         if (n == 0) return nullptr;
@@ -36,16 +35,10 @@ class SecureAllocator {
         ::operator delete(p);
     }
 
-    template <typename U>
-    bool operator==(const SecureAllocator<U>&) const noexcept {
-        return true;
-    }
-    template <typename U>
-    bool operator!=(const SecureAllocator<U>&) const noexcept {
-        return false;
-    }
+    template <typename U> bool operator==(const SecureAllocator<U>&) const noexcept { return true; }
+    template <typename U> bool operator!=(const SecureAllocator<U>&) const noexcept { return false; }
 };
 
 using SecureBytes = std::vector<std::byte, SecureAllocator<std::byte>>;
 
-}  // namespace aes
+} // namespace aes

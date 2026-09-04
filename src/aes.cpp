@@ -1,75 +1,73 @@
-#include <optional>
-
-#include "aes/dispatch.hpp"
+#include "aes/aes.hpp"
 #include "backend.hpp"
 #include "platform/platform.hpp"
+#include <cstring>
+#include <fstream>
 
 namespace aes {
-namespace {
-
-AesPath detect() noexcept {
-    if (platform::cpu_has_aesni()) return AesPath::Hardware_AESNI;
-    if (platform::cpu_has_arm_aes()) return AesPath::Hardware_ARM_CE;
-    return AesPath::Software;
-}
-
-AesPath cached_detect() noexcept {
-    static const AesPath p = detect();
-    return p;
-}
-
-thread_local std::optional<AesPath> t_override;
-
-}  // namespace
-
-AesPath detect_aes_path() noexcept {
-    return cached_detect();
-}
-
-const char* aes_path_name(AesPath p) noexcept {
-    switch (p) {
-        case AesPath::Software:
-            return "Software (portable)";
-        case AesPath::Hardware_AESNI:
-            return "Hardware (AES-NI)";
-        case AesPath::Hardware_ARM_CE:
-            return "Hardware (ARM CE)";
-    }
-    return "Unknown";
-}
-
-AesPath active_aes_path() noexcept {
-    return t_override.value_or(cached_detect());
-}
-
-void force_aes_path(AesPath p) noexcept {
-    t_override = p;
-}
-void clear_forced_aes_path() noexcept {
-    t_override.reset();
-}
 
 namespace detail {
-
-struct Backend {
-    backend::ExpandKeyFn ek;
-    backend::CtrXorFn cx;
-};
-
-Backend get_backend() noexcept {
-    switch (active_aes_path()) {
-#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
-        case AesPath::Hardware_AESNI:
-            return {backend::ni_expand_key, backend::ni_ctr_xor};
-#endif
-#if defined(__aarch64__) || defined(_M_ARM64)
-        case AesPath::Hardware_ARM_CE:
-            return {backend::arm_expand_key, backend::arm_ctr_xor};
-#endif
-        default:
-            return {backend::sw_expand_key, backend::sw_ctr_xor};
-    }
+struct Backend { void(*ek)(const std::byte*,std::byte*); void(*cx)(const std::byte*,const std::byte*,const std::byte*,std::byte*,std::size_t); };
+Backend get_backend() noexcept;
 }
 
-}  // namespace detail
-}  // namespace aes
+namespace {
+// 32-bit counter means max 2^32 blocks. Stop before wrap.
+constexpr uint64_t MAX_BYTES = (uint64_t{1}<<32)*16 - 16;
+}
+
+EncryptResult encrypt(const Key& key, const std::vector<std::byte>& pt) {
+    if (pt.size() > MAX_BYTES) throw CryptoError("plaintext too large");
+    EncryptResult r;
+    std::byte rnd[12];
+    platform::csprng_fill(rnd, 12);
+    std::memcpy(r.nonce.data(), rnd, 12);
+    r.nonce[12] = r.nonce[13] = r.nonce[14] = r.nonce[15] = std::byte{0};
+    secure_zero(rnd, 12);
+    r.ciphertext.resize(pt.size());
+    if (!pt.empty())
+        detail::get_backend().cx(key.expanded_key(), r.nonce.data(),
+                                  pt.data(), r.ciphertext.data(), pt.size());
+    return r;
+}
+
+std::vector<std::byte> decrypt(const Key& key,
+    const std::array<std::byte,16>& nonce, const std::vector<std::byte>& ct) {
+    if (ct.size() > MAX_BYTES) throw CryptoError("ciphertext too large");
+    std::vector<std::byte> pt(ct.size());
+    if (!ct.empty())
+        detail::get_backend().cx(key.expanded_key(), nonce.data(),
+                                  ct.data(), pt.data(), ct.size());
+    return pt;
+}
+
+void encrypt_to_file(const Key& key, const std::vector<std::byte>& pt, const std::string& path) {
+    auto r = encrypt(key, pt);
+    Container c;
+    c.header.ciphertext_length = r.ciphertext.size();
+    c.header.nonce = r.nonce;
+    c.ciphertext = std::move(r.ciphertext);
+    save_container(c, path);
+}
+
+std::vector<std::byte> decrypt_from_file(const Key& key, const std::string& path) {
+    auto c = load_container(path);
+    return decrypt(key, c.header.nonce, c.ciphertext);
+}
+
+std::vector<std::byte> load_file(const std::string& path) {
+    std::ifstream f(path, std::ios::binary|std::ios::ate);
+    if (!f) throw IoError("cannot open: " + path);
+    auto sz = f.tellg(); f.seekg(0);
+    std::vector<std::byte> d(static_cast<std::size_t>(sz));
+    f.read(reinterpret_cast<char*>(d.data()), sz);
+    return d;
+}
+
+void save_file(const std::vector<std::byte>& d, const std::string& path) {
+    std::ofstream f(path, std::ios::binary|std::ios::trunc);
+    if (!f) throw IoError("cannot write: " + path);
+    f.write(reinterpret_cast<const char*>(d.data()), static_cast<std::streamsize>(d.size()));
+}
+
+} // namespace aes
