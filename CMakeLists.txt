@@ -32,7 +32,8 @@ if(AES_BUILD_TESTS)
 endif()
 
 if(AES_BUILD_BINDINGS)
-    add_library(aes_capi SHARED bindings/python/aes_capi.cpp)
+    add_library(aes_capi SHARED bindings/python/aes_capi.h
+            bindings/python/aes_capi.cpp)
     target_link_libraries(aes_capi PRIVATE aes_lib)
     target_include_directories(aes_capi PRIVATE ${PROJECT_SOURCE_DIR}/bindings/python)
     if(WIN32)
