@@ -12,6 +12,6 @@ void unlock_memory(void* ptr, std::size_t len) noexcept;
 bool cpu_has_aesni() noexcept;
 bool cpu_has_arm_aes() noexcept;
 void read_file_exact(const std::string& path, void* buf, std::size_t size);
-void write_file_exact(const std::string& path, void* buf, std::size_t size);
+void write_file_exact(const std::string& path, const void* buf, std::size_t size);
 
 }  // namespace aes::platform
