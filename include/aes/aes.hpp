@@ -1,66 +1,61 @@
-#include "aes/container.hpp"
-#include "aes/errors.hpp"
+#pragma once
+#include <array>
+#include <cstddef>
 #include <cstring>
-#include <fstream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "aes/container.hpp"
+#include "aes/dispatch.hpp"
+#include "aes/errors.hpp"
+#include "aes/key.hpp"
 
 namespace aes {
-namespace {
-constexpr std::size_t HDR = 32;
-constexpr uint16_t VER = 1;
-constexpr std::array<std::byte,4> MAGIC = {std::byte{0x41},std::byte{0x45},std::byte{0x35},std::byte{0x00}};
 
-void w16(std::byte* p, uint16_t v) { p[0]=std::byte(v&0xff); p[1]=std::byte((v>>8)&0xff); }
-void w64(std::byte* p, uint64_t v) { for(int i=0;i<8;++i) p[i]=std::byte((v>>(8*i))&0xff); }
-uint16_t r16(const std::byte* p) {
-    return uint16_t(uint16_t(std::to_integer<uint8_t>(p[0])) | (uint16_t(std::to_integer<uint8_t>(p[1]))<<8));
-}
-uint64_t r64(const std::byte* p) {
-    uint64_t v=0; for(int i=0;i<8;++i) v|=uint64_t(std::to_integer<uint8_t>(p[i]))<<(8*i); return v;
-}
-}
+struct EncryptResult {
+    std::array<std::byte, 16> nonce;
+    std::vector<std::byte> ciphertext;
+};
 
-std::vector<std::byte> serialize_container(const Container& c) {
-    std::vector<std::byte> o(HDR + c.ciphertext.size());
-    std::memcpy(o.data(), MAGIC.data(), 4);
-    w16(o.data()+4, c.header.version);
-    w16(o.data()+6, static_cast<uint16_t>(c.header.algorithm));
-    std::memcpy(o.data()+8, c.header.nonce.data(), 16);
-    w64(o.data()+24, c.header.ciphertext_length);
-    if (!c.ciphertext.empty())
-        std::memcpy(o.data()+HDR, c.ciphertext.data(), c.ciphertext.size());
-    return o;
-}
+/// Encrypt with AES-256-CTR. Nonce is generated fresh from CSPRNG.
+EncryptResult encrypt(const Key& key, const std::vector<std::byte>& plaintext);
 
-Container deserialize_container(const std::vector<std::byte>& d) {
-    if (d.size() < HDR) throw FormatError("too small");
-    if (std::memcmp(d.data(), MAGIC.data(), 4) != 0) throw FormatError("bad magic");
-    Container c;
-    c.header.version = r16(d.data()+4);
-    if (c.header.version != VER) throw FormatError("unsupported version");
-    c.header.algorithm = static_cast<AlgorithmId>(r16(d.data()+6));
-    if (c.header.algorithm != AlgorithmId::AES_256_CTR) throw FormatError("unsupported algorithm");
-    std::memcpy(c.header.nonce.data(), d.data()+8, 16);
-    c.header.ciphertext_length = r64(d.data()+24);
-    if (c.header.ciphertext_length > d.size() - HDR) throw FormatError("truncated");
-    auto n = static_cast<std::size_t>(c.header.ciphertext_length);
-    c.ciphertext.resize(n);
-    if (n > 0) std::memcpy(c.ciphertext.data(), d.data()+HDR, n);
-    return c;
+/// Decrypt AES-256-CTR ciphertext.
+std::vector<std::byte> decrypt(const Key& key,
+    const std::array<std::byte, 16>& nonce, const std::vector<std::byte>& ct);
+
+void encrypt_to_file(const Key& key, const std::vector<std::byte>& pt, const std::string& path);
+std::vector<std::byte> decrypt_from_file(const Key& key, const std::string& path);
+std::vector<std::byte> load_file(const std::string& path);
+void save_file(const std::vector<std::byte>& data, const std::string& path);
+
+// Template API for trivially copyable types.
+template <typename T>
+std::enable_if_t<std::is_trivially_copyable_v<T>, EncryptResult>
+encrypt_value(const Key& key, const T& value) {
+    std::vector<std::byte> bytes(sizeof(T));
+    std::memcpy(bytes.data(), &value, sizeof(T));
+    return encrypt(key, bytes);
 }
 
-void save_container(const Container& c, const std::string& path) {
-    auto b = serialize_container(c);
-    std::ofstream f(path, std::ios::binary|std::ios::trunc);
-    if (!f) throw IoError("cannot write: " + path);
-    f.write(reinterpret_cast<const char*>(b.data()), static_cast<std::streamsize>(b.size()));
+template <typename T>
+std::enable_if_t<std::is_trivially_copyable_v<T>, T>
+decrypt_value(const Key& key, const std::array<std::byte, 16>& nonce,
+              const std::vector<std::byte>& ct) {
+    auto pt = decrypt(key, nonce, ct);
+    if (pt.size() != sizeof(T)) throw FormatError("size mismatch");
+    T v;
+    std::memcpy(&v, pt.data(), sizeof(T));
+    return v;
 }
 
-Container load_container(const std::string& path) {
-    std::ifstream f(path, std::ios::binary|std::ios::ate);
-    if (!f) throw IoError("cannot open: " + path);
-    auto sz = f.tellg(); f.seekg(0);
-    std::vector<std::byte> d(static_cast<std::size_t>(sz));
-    f.read(reinterpret_cast<char*>(d.data()), sz);
-    return deserialize_container(d);
+template <typename T>
+std::enable_if_t<std::is_trivially_copyable_v<T>, EncryptResult>
+encrypt_values(const Key& key, const std::vector<T>& vals) {
+    std::vector<std::byte> bytes(vals.size() * sizeof(T));
+    if (!vals.empty()) std::memcpy(bytes.data(), vals.data(), bytes.size());
+    return encrypt(key, bytes);
 }
+
 } // namespace aes

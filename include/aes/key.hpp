@@ -1,19 +1,16 @@
 #pragma once
 #include <cstddef>
 #include <string>
-
-#include "secure_memory.hpp"
+#include "aes/secure_memory.hpp"
 
 namespace aes {
 
 inline constexpr std::size_t AES256_KEY_SIZE = 32;
 inline constexpr std::size_t AES_BLOCK_SIZE = 16;
-inline constexpr std::size_t AES256_RK_SIZE = 240;  // 15 round keys * 16 bytes
+inline constexpr std::size_t AES256_RK_SIZE = 240;
 
-// Move-only. Key expansion happens in the constructor so the object
-// is immutable after creation — safe to share const Key& across threads.
 class Key {
-   public:
+public:
     static Key generate();
     static Key from_bytes(SecureBytes raw);
     static Key from_span(const std::byte* data, std::size_t len);
@@ -30,10 +27,10 @@ class Key {
     Key& operator=(const Key&) = delete;
     ~Key() = default;
 
-   private:
+private:
     explicit Key(SecureBytes raw);
     SecureBytes raw_;
     SecureBytes rk_;
 };
 
-}  // namespace aes
+} // namespace aes
