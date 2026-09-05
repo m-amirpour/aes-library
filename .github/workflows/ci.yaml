@@ -1,0 +1,34 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_type: [Release]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DAES_BUILD_TESTS=ON
+          -DAES_BUILD_BINDINGS=ON
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel
+
+      - name: Run Test Harness
+        working-directory: build
+        run: |
+          ${{ runner.os == 'Windows' && 'Release\\aes_harness.exe' || './aes_harness' }}
+
+      - name: Run Unit Tests
+        working-directory: build
+        run: ctest -C ${{ matrix.build_type }} --output-on-failure
