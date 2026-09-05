@@ -3,7 +3,8 @@
 This is a walkthrough of the decisions I made and why. If you just want to
 use the library, the README is enough.
 
-## Overall structure
+## Architecture
+![Architecture](assets/architecture_and_dispatch.png)
 
 The library is split into three layers. The public API in include/aes/ is
 what callers see: encrypt(), decrypt(), the Key class, file helpers. Below
@@ -17,7 +18,8 @@ per backend: one to expand the key schedule, one to do the CTR XOR loop.
 This means adding a new architecture is just adding one .cpp file and a
 case in the dispatch switch. Nothing else needs to change.
 
-## Hardware dispatch
+## Hardware dispatch & CTR Pipeline
+![CTR Pipeline](assets/ctr_mode_and_4way_pipeline.png)
 
 The hard part about "same binary, any CPU" is that you can't just compile
 everything with -maes. If you do, the compiler will happily emit AES-NI
@@ -37,7 +39,7 @@ For testing, force_aes_path() lets you override the path per-thread using
 thread_local. This way the test suite can exercise both software and
 hardware paths on the same machine without threads stepping on each other.
 
-## Nonce strategy
+## Nonce Strategy
 
 CTR mode is broken if you reuse a (key, nonce) pair. It degrades to a
 two-time pad and the attacker can XOR two ciphertexts to get the XOR of
@@ -60,6 +62,7 @@ would probably split the data across multiple nonces, but that's a streaming
 API problem and out of scope here.
 
 ## Container format
+![Container Format](assets/container_format.png)
 
 The on-disk format is dead simple. 32-byte header, then the ciphertext:
 
@@ -80,7 +83,8 @@ but not integrity — an attacker can flip bits in the ciphertext and the
 same bits flip in the plaintext. For real use you'd want AES-GCM or at
 least CTR + HMAC. That's the first thing I'd add for a v2 format.
 
-## Key handling
+## Key handling & Memory Security
+![Key Lifecycle](assets/key_lifecycle_and_security.png)
 
 The Key class is move-only. You literally cannot copy it. This prevents the
 most common key management mistake: accidentally duplicating key material
