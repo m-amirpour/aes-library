@@ -1,5 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
+
+#include <ntstatus.h>
 #include <windows.h>
 
 // WORKAROUND: Fix Windows 11 SDK (10.0.26100.0) bug where SAL annotations
@@ -10,6 +12,9 @@
 #define _Return_type_success_(expr)
 
 #include <bcrypt.h>
+#include <intrin.h>  // __cpuid
+
+#include <string>  // std::string
 
 #include "aes/errors.hpp"
 #include "platform.hpp"
