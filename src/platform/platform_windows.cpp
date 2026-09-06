@@ -1,23 +1,17 @@
-#include "aes/errors.hpp"
-#include "platform.hpp"
-
-#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
 #define NOMINMAX
-#endif
 #include <bcrypt.h>
 #include <windows.h>
-#if defined(_M_X64) || defined(_M_IX86)
-#include <intrin.h>
-#endif
+
+#include "aes/errors.hpp"
+#include "platform.hpp"
 
 namespace aes::platform {
 
 void csprng_fill(void* buf, std::size_t len) {
     if (len == 0) return;
     if (!buf) throw RandomError("null buffer");
+
     NTSTATUS s = ::BCryptGenRandom(nullptr, static_cast<PUCHAR>(buf), static_cast<ULONG>(len),
                                    BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     if (!BCRYPT_SUCCESS(s)) throw RandomError("BCryptGenRandom failed");
