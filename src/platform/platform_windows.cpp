@@ -1,7 +1,15 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-#include <bcrypt.h>
 #include <windows.h>
+
+// WORKAROUND: Fix Windows 11 SDK (10.0.26100.0) bug where SAL annotations
+// conflict with strict C++17 conformance inside <bcrypt.h> line 39.
+#ifdef _Return_type_success_
+#undef _Return_type_success_
+#endif
+#define _Return_type_success_(expr)
+
+#include <bcrypt.h>
 
 #include "aes/errors.hpp"
 #include "platform.hpp"
