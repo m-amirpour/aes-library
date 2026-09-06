@@ -191,7 +191,7 @@ python3 bindings/python/example.py
 
 ## AI Tools
 
-I used Claude (via Cursor) during development to sanity‑check AES‑NI intrinsic sequences against Intel's documentation, and to think through the key material lifecycle (zeroing, locking, and copy avoidance). The code was written, debugged, and validated by me. If anything is wrong, it is my fault, not the AI's.
+I used Claude during development to sanity‑check AES‑NI intrinsic sequences against Intel's documentation, and to think through the key material lifecycle (zeroing, locking, and copy avoidance). The code was written, debugged, and validated by me. If anything is wrong, it is my fault, not the AI's.
 
 ## License
 
