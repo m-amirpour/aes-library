@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
-project(aes_library VERSION 1.0.0 LANGUAGES CXX)
+project(aes_library VERSION 1.0.0 LANGUAGES CXX
+    DESCRIPTION "Hardware-accelerated AES-256-CTR encryption library")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,10 +16,12 @@ include(cmake/CompilerWarnings.cmake)
 if(AES_BUILD_TESTS)
     include(FetchContent)
     FetchContent_Declare(googletest
-            URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.14.0
     )
-    # Prevent GoogleTest from overriding compiler settings on Windows
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
     enable_testing()
 endif()
@@ -34,11 +37,11 @@ if(AES_BUILD_TESTS)
 endif()
 
 if(AES_BUILD_BINDINGS)
-    add_library(aes_capi SHARED bindings/python/aes_capi.h
-            bindings/python/aes_capi.cpp)
+    add_library(aes_capi SHARED bindings/python/aes_capi.cpp)
     target_link_libraries(aes_capi PRIVATE aes_lib)
     target_include_directories(aes_capi PRIVATE ${PROJECT_SOURCE_DIR}/bindings/python)
     if(WIN32)
-        target_include_directories(aes_capi PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        set_target_properties(aes_capi PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     endif()
+    aes_set_warnings(aes_capi)
 endif()
